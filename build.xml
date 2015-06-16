@@ -1,0 +1,21 @@
+<project name="Kara" default="build">
+    <typedef resource="org/jetbrains/kotlin/ant/antlib.xml" classpath="${kotlin.compiler}/lib/kotlin-ant.jar"/>
+
+    <target name="build">
+        <mkdir dir="out"/>
+
+        <kotlinc output="out/kara.jar">
+            <src path="src/ConfigReader/src"/>
+            <src path="src/HTMLBuilder/src"/>
+            <src path="src/KaraExec/src"/>
+            <src path="src/KaraLib/src"/>
+            <src path="src/KaraTests/src"/>
+            <src path="src/Kootstrap/src"/>
+            <src path="src/ReflectionUtil/src"/>
+            <classpath>
+                <fileset dir="lib" includes="*.jar"/>
+                <fileset dir="${kotlin.compiler}/lib" includes="kotlin-reflect.jar"/>
+            </classpath>
+        </kotlinc>
+    </target>
+</project>
