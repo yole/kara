@@ -15,7 +15,7 @@ import java.nio.file.attribute.BasicFileAttributes
 
 /** The base Kara application class.
  */
-open class Application(public val config: ApplicationConfig) {
+open class Application(public val config: ApplicationConfig, public val appContext: String = "") {
     private var _context: ApplicationContext? = null
     private val watchKeys = ArrayList<WatchKey>()
     private val contextLock = Object()
@@ -51,7 +51,7 @@ open class Application(public val config: ApplicationConfig) {
             context!!
         }
 
-    public fun requestClassloader(): ClassLoader = classLoader(config)
+    public fun requestClassloader(): ClassLoader = classLoader(config, appContext)
 
     open fun createContext(): ApplicationContext {
         val classLoader = requestClassloader()
@@ -86,19 +86,19 @@ open class Application(public val config: ApplicationConfig) {
                 return FileVisitResult.CONTINUE
             }
             override fun visitFile(file: Path?, attrs: BasicFileAttributes): FileVisitResult {
-                val dir = file?.getParent()
+                val dir = file?.parent
                 if (dir != null)
                     paths.add(dir)
                 return FileVisitResult.CONTINUE
             }
         }
-        val loaders = resourceTypes.map { it.getClassLoader() }.toSet()
+        val loaders = resourceTypes.map { it.classLoader }.toSet()
         for (loader in loaders) {
             if (loader is URLClassLoader) {
-                val loaderUrls = loader.getURLs()
+                val loaderUrls = loader.urLs
                 for (url in loaderUrls) {
                     logger.debug("Evaluating URL '${url}' to watch for changes.")
-                    url.getPath()?.let {
+                    url.path?.let {
                         val folder = File(urlDecode(it))
                         if (folder.exists()) {
                             Files.walkFileTree(folder.toPath(), visitor)
@@ -126,17 +126,17 @@ open class Application(public val config: ApplicationConfig) {
     companion object {
         val logger = Logger.getLogger(javaClass)!!
 
-        fun classLoader(config: ApplicationConfig): ClassLoader {
-            val rootClassloader = javaClass.getClassLoader()!!
-            val classPath = config.classPath
+        fun classLoader(config: ApplicationConfig, appContext: String): ClassLoader {
+            val rootClassloader = javaClass.classLoader!!
+            val classPath = config.classPath(appContext)
             return when {
                 classPath.isEmpty() -> rootClassloader
                 else -> URLClassLoader(classPath, rootClassloader)
             }
         }
 
-        public fun load(config: ApplicationConfig): Application {
-            val application = Application(config)
+        public fun load(config: ApplicationConfig, appContext: String): Application {
+            val application = Application(config, appContext)
             application.start()
             return application
         }
