@@ -72,7 +72,7 @@ class BigDecimalSerializer: TypeSerializer() {
     }
 
     override fun isThisType(testType : Class<*>) : Boolean {
-        return javaClass<BigDecimal>().isAssignableFrom(testType)
+        return BigDecimal::class.java.isAssignableFrom(testType)
     }
 }
 
@@ -83,9 +83,9 @@ class EnumSerializer: TypeSerializer() {
 
     override fun deserialize(param: String, paramType: Class<*>): Any? {
         return if (paramType.isEnum) {
-            paramType.getEnumConstants()?.get(param.toInt())
+            paramType.getEnumConstants()?.safeGet(param.toInt())
         } else if (paramType.isEnumClass()) {
-            paramType.enclosingClass.getEnumConstants()?.get(param.toInt())
+            paramType.enclosingClass.getEnumConstants()?.safeGet(param.toInt())
         }
     }
 
@@ -106,7 +106,7 @@ class DataClassSerializer: TypeSerializer() {
     }
 
     override fun isThisType(testType: Class<out Any?>): Boolean {
-        return javaClass<DataClass>().isAssignableFrom(testType)
+        return DataClass::class.java.isAssignableFrom(testType)
     }
 }
 
@@ -132,7 +132,7 @@ public object Serialization {
     }
 
     public fun deserialize(param : String, paramType : Class<Any>) : Any? {
-        if (paramType == javaClass<String>()) {
+        if (paramType == String::class.java) {
             return param
         }
         for (deserializer in serializer) {
