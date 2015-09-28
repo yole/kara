@@ -1,8 +1,7 @@
 package kara
 
-import java.util.*
-import kara.internal.*
 import kotlinx.reflection.MissingArgumentException
+import java.util.*
 
 /** Contains all of the parameters for a matched route. */
 class RouteParameters() {
@@ -10,24 +9,24 @@ class RouteParameters() {
     val _list = ArrayList<String>()
 
     /** Gets a named parameter by name */
-    fun get(name : String) : String? {
+    operator fun get(name : String) : String? {
         return _map[name]
     }
 
     /** Sets a named parameter */
-    fun set(name : String, value : String) {
+    operator fun set(name : String, value : String) {
         if (!_map.containsKey(name)) // add it to the unnamed list as well, if it's not already there
             append(value)
         _map[name] = value
     }
 
     /** Gets an unnamed parameter by index */
-    fun get(i : Int) : String? {
+    operator fun get(i : Int) : String? {
         return _list.get(i)
     }
 
     /** Sets an unnamed parameter */
-    fun set(i : Int, value : String) {
+    operator fun set(i : Int, value : String) {
         _list.set(i, value)
     }
 

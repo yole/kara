@@ -1,16 +1,14 @@
 package kara
 
-import kara.internal.*
-import kotlinx.reflection.*
-import kotlin.properties.Delegates
-import javax.servlet.http.*
-import java.util.*
+import kara.internal.ResourceDispatcher
+import kotlinx.reflection.MissingArgumentException
+import kotlinx.reflection.filterIsAssignable
+import kotlinx.reflection.findClasses
 import org.apache.log4j.Logger
-import java.io.IOException
-import java.net.Socket
 import java.net.SocketException
-import kotlin.jvm.internal.Reflection
-import kotlin.reflect.jvm.internal.KPackageImpl
+import java.util.*
+import javax.servlet.http.HttpServletRequest
+import javax.servlet.http.HttpServletResponse
 
 /** Current application execution context
  */
@@ -26,17 +24,9 @@ class ApplicationContext(public val config : ApplicationConfig,
     public val version: Int = ++versionCounter
 
     init {
-        val monitors = arrayListOf<ApplicationContextMonitor>()
-        packages.flatMap { scanPackageForMonitors(it) }.forEach {
-            val objectInstance = it.objectInstance()
-            if (objectInstance != null) {
-                monitors.add(objectInstance as ApplicationContextMonitor)
-            } else {
-                monitors.add(it.newInstance())
-            }
-        }
-
-        for (monitor in monitors.sortedBy { it.priority }) {
+        packages.flatMap { scanPackageForMonitors(it) }.map {
+            it.kotlin.objectInstance as? ApplicationContextMonitor ?: it.newInstance()
+        }.sortedBy { it.priority }.forEach { monitor ->
             logger.info("Executing startup sequence on ${monitor.javaClass}")
             monitor.created(this)
             monitorInstances.add(monitor)
@@ -104,13 +94,13 @@ class ApplicationContext(public val config : ApplicationConfig,
         }
 
 
-    fun scanPackageForMonitors(prefix: String): List<Class<out ApplicationContextMonitor>> {
+    fun scanPackageForMonitors(prefix: String): List<Class<ApplicationContextMonitor>> {
         try {
             return classLoader.findClasses(prefix, reflectionCache).filterIsAssignable<ApplicationContextMonitor>()
         }
         catch(e: Throwable) {
             e.printStackTrace()
-            return listOf<Class<ApplicationContextMonitor>>()
+            return listOf()
         }
     }
 

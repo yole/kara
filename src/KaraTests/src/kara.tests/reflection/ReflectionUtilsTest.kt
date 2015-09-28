@@ -3,11 +3,8 @@ package kara.tests.reflection
 import kara.Application
 import kara.ApplicationConfig
 import kara.internal.scanPackageForResources
-import kotlinx.reflection.ReflectionCache
 import kotlinx.reflection.companionObjectInstance
-import kotlinx.reflection.objectInstance
 import kotlinx.reflection.objectInstance0
-import org.junit.Before
 import org.junit.Test
 import java.net.URLClassLoader
 import kotlin.test.assertEquals
@@ -26,25 +23,19 @@ object Foo2 {
 
 class ObjectInstances() {
 
-    @Before
-    fun cleanUpReflectionCache() {
-        ReflectionCache.companionObjects.clear()
-        ReflectionCache.objects.clear()
-    }
-
     @Test fun testDeprecatedObjectInstanceViaReflection() {
         assertNotNull(Foo2::class.java.objectInstance0())
         assertNotNull(Foo2.Test::class.java.objectInstance0())
     }
 
     @Test fun testObjectInstance() {
-        assertNotNull(Foo2::class.java.objectInstance())
-        assertNotNull(Foo2.Test::class.java.objectInstance())
-        assertEquals(Foo2.Test::class.java.objectInstance(), Foo2.Test::class.java.objectInstance0())
+        assertNotNull(Foo2::class.objectInstance)
+        assertNotNull(Foo2.Test::class.objectInstance)
+        assertEquals(Foo2.Test::class.objectInstance, Foo2.Test::class.java.objectInstance0())
     }
 
     @Test fun testObjectInstanceIsNotCompanion() {
-        assertNull(Foo::class.java.objectInstance())
+        assertNull(Foo::class.objectInstance)
     }
 
 

@@ -5,8 +5,16 @@ import kara.tests.views.HomeView
 import kara.tests.views.SomeFunView
 import kara.tests.views.view
 import java.net.SocketException
+import kotlin.html.CssElement
 import kotlin.html.div
 import kotlin.html.span
+
+@Get("/test/test.css")
+object TestStyles : Stylesheet() {
+    override fun CssElement.render() {
+        body {}
+    }
+}
 
 object Routes {
     @Get("/")
@@ -20,7 +28,17 @@ object Routes {
 
     @Get("/optional/?p")
     class Optional(val p: String?) : Request({
-        TextResult("optional/${p}")
+        TextResult("optional/$p")
+    })
+
+    @Get("/default/?p")
+    class Default(val p: String? = "test") : Request({
+        TextResult("default/$p")
+    })
+
+    @Get("/ndefault/?p")
+    class NDefault(val p: Int? = 42) : Request({
+        TextResult("ndefault/$p")
     })
 
     @Get("/error/:brokenPipe")
@@ -81,7 +99,7 @@ object Routes {
         })
 
         @Get("complex/*/list/:id")
-        class Complex(id: String) : Request({
+        class Complex(val id: String) : Request({
             TextResult("complex: ${params[0]} id = $id")
         })
 
@@ -92,12 +110,12 @@ object Routes {
 
         @Get("compute/:anInt/:aFloat")
         class Compute(val anInt: Int, val aFloat: Float) : Request({
-            TextResult("compute: ${anInt}, ${aFloat}")
+            TextResult("compute: $anInt, $aFloat")
         })
 
         @Get("compute")
         class ComputeQuery(val anInt: Int, val aFloat: Float) : Request({
-            TextResult("compute: ${anInt}, ${aFloat}")
+            TextResult("compute: $anInt, $aFloat")
         })
     }
 
@@ -108,7 +126,7 @@ object Routes {
         })
 
         @Get(":id")
-        class Show(id: Int) : Request({
+        class Show(val id: Int) : Request({
             TextResult("show $id")
         })
 
@@ -118,12 +136,12 @@ object Routes {
         })
 
         @Put(":id")
-        class Update(id: Int) : Request({
-            TextResult("update ${id}")
+        class Update(val id: Int) : Request({
+            TextResult("update $id")
         })
 
         @Delete(":id")
-        class _Delete(id: String) : Request({
+        class _Delete(val id: String) : Request({
             TextResult("delete $id")
         })
     }

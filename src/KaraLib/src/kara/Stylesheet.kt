@@ -1,8 +1,6 @@
 package kara
 
 import kotlin.html.*
-import java.io.OutputStreamWriter
-import java.io.FileOutputStream
 
 /** A class for programmatically generating CSS stylesheets.
  */
@@ -69,6 +67,6 @@ class STYLESHEETLINK(containingTag : HEAD, var stylesheet : Stylesheet) : HtmlTa
 
     override fun renderElement(builder: StringBuilder, indent: String) {
         href = stylesheet
-        super<HtmlTag>.renderElement(builder, indent)
+        super.renderElement(builder, indent)
     }
 }
