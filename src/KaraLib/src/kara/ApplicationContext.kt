@@ -1,16 +1,14 @@
 package kara
 
-import kara.internal.*
-import kotlinx.reflection.*
-import kotlin.properties.Delegates
-import javax.servlet.http.*
-import java.util.*
+import kara.internal.ResourceDispatcher
+import kotlinx.reflection.MissingArgumentException
+import kotlinx.reflection.filterIsAssignable
+import kotlinx.reflection.findClasses
 import org.apache.log4j.Logger
-import java.io.IOException
-import java.net.Socket
 import java.net.SocketException
-import kotlin.jvm.internal.Reflection
-import kotlin.reflect.jvm.internal.KPackageImpl
+import java.util.*
+import javax.servlet.http.HttpServletRequest
+import javax.servlet.http.HttpServletResponse
 
 /** Current application execution context
  */
@@ -26,17 +24,9 @@ class ApplicationContext(public val config : ApplicationConfig,
     public val version: Int = ++versionCounter
 
     init {
-        val monitors = arrayListOf<ApplicationContextMonitor>()
-        packages.flatMap { scanPackageForMonitors(it) }.forEach {
-            val objectInstance = it.objectInstance()
-            if (objectInstance != null) {
-                monitors.add(objectInstance as ApplicationContextMonitor)
-            } else {
-                monitors.add(it.newInstance())
-            }
-        }
-
-        for (monitor in monitors.sortBy { it.priority }) {
+        packages.flatMap { scanPackageForMonitors(it) }.map {
+            it.kotlin.objectInstance as? ApplicationContextMonitor ?: it.newInstance()
+        }.sortedBy { it.priority }.forEach { monitor ->
             logger.info("Executing startup sequence on ${monitor.javaClass}")
             monitor.created(this)
             monitorInstances.add(monitor)
@@ -49,7 +39,7 @@ class ApplicationContext(public val config : ApplicationConfig,
 
     public fun dispatch(request: HttpServletRequest, response: HttpServletResponse): Boolean {
 
-        fun formatLogErrorMsg(error: String, req: HttpServletRequest) = "$error processing ${req.getMethod()} ${req.getRequestURI()}. User agent: ${req.getHeader("User-Agent")}, Referer: ${req.getHeader("Referer")}"
+        fun formatLogErrorMsg(error: String, req: HttpServletRequest) = "$error processing ${req.method} ${req.requestURI}. User agent: ${req.getHeader("User-Agent")}, Referer: ${req.getHeader("Referer")}"
 
         fun dispatch(index: Int, request: HttpServletRequest, response: HttpServletResponse): Boolean {
             return if (index in interceptors.indices) {
@@ -67,21 +57,21 @@ class ApplicationContext(public val config : ApplicationConfig,
             // All kinds of EOFs and Broken Pipes can be safely ignored
         }
         catch(e400: MissingArgumentException) {
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, e400.getMessage())
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, e400.message)
             Application.logger.warn(formatLogErrorMsg("400", request), e400)
         } catch(e400: InvalidRequestException) {
             Application.logger.warn(formatLogErrorMsg("400", request), e400)
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, e400.getMessage())
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, e400.message)
         } catch(e404: NotFoundException) {
             Application.logger.warn(formatLogErrorMsg("404", request), e404)
-            response.sendError(HttpServletResponse.SC_NOT_FOUND, e404.getMessage())
+            response.sendError(HttpServletResponse.SC_NOT_FOUND, e404.message)
         }
         catch(ex: Throwable) {
             when {
-                ex.javaClass.getName() == "org.apache.catalina.connector.ClientAbortException" -> {} // do nothing for tomcat specific exception
+                ex.javaClass.name == "org.apache.catalina.connector.ClientAbortException" -> {} // do nothing for tomcat specific exception
                 else -> {
                     Application.logger.error(formatLogErrorMsg("Error", request), ex)
-                    response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, ex.getMessage())
+                    response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, ex.message)
                 }
             }
         }
@@ -104,13 +94,13 @@ class ApplicationContext(public val config : ApplicationConfig,
         }
 
 
-    fun scanPackageForMonitors(prefix: String): List<Class<out ApplicationContextMonitor>> {
+    fun scanPackageForMonitors(prefix: String): List<Class<ApplicationContextMonitor>> {
         try {
             return classLoader.findClasses(prefix, reflectionCache).filterIsAssignable<ApplicationContextMonitor>()
         }
         catch(e: Throwable) {
             e.printStackTrace()
-            return listOf<Class<ApplicationContextMonitor>>()
+            return listOf()
         }
     }
 

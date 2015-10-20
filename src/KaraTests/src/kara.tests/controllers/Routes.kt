@@ -1,27 +1,52 @@
 package kara.tests.controllers
 
 import kara.*
-import kara.internal.*
-import kara.tests.views.*
+import kara.tests.views.HomeView
+import kara.tests.views.SomeFunView
+import kara.tests.views.view
 import java.net.SocketException
-import kotlin.html.*
+import kotlin.html.CssElement
+import kotlin.html.div
+import kotlin.html.span
+
+@Get("/test/test.css")
+object TestStyles : Stylesheet() {
+    override fun CssElement.render() {
+        body {}
+    }
+}
 
 object Routes {
-    Get("/")
+    @Get("/")
     class Index() : Request({ HomeView() })
 
-    Get("/test")
+    @Get("/test")
     class Test() : Request({ TextResult("This is a test action") })
 
-    Post("/update")
+    @Post("/update")
     class Update() : Request({ TextResult("Something's been updated!") })
 
-    Get("/optional/?p")
+    @Get("/optional/?p")
     class Optional(val p: String?) : Request({
-        TextResult("optional/${p}")
+        TextResult("optional/$p")
     })
 
-    Get("/error/:brokenPipe")
+    @Get("/default/?p")
+    class Default(val p: String? = "test") : Request({
+        TextResult("default/$p")
+    })
+
+    @Get("/ndefault/?p")
+    class NDefault(val p: Int? = 42) : Request({
+        TextResult("ndefault/$p")
+    })
+
+    @Get("/emptyStrings")
+    class EmptyStrings(val es: String, val esn: String?, val int: Int?) : Request({
+        TextResult("es:$es,esn:$esn,int:$int")
+    })
+
+    @Get("/error/:brokenPipe")
     class Error(val brokenPipe: Boolean) : Request({
         if (brokenPipe) {
             throw SocketException("Broken Pipe")
@@ -29,7 +54,7 @@ object Routes {
         throw RuntimeException("Something went wrong")
     })
 
-    Get("/template/:n")
+    @Get("/template/:n")
     class SomeRoute(n: Int) : Request({
         when (n) {
             1 -> view {
@@ -53,75 +78,75 @@ object Routes {
     })
 
     object Foo {
-        Get("#")
+        @Get("#")
         class Blank() : Request({
             TextResult("blank")
         })
 
-        Get("bar")
+        @Get("bar")
         class Bar() : Request({
             TextResult("bar")
         })
 
-        Get("bar/baz")
+        @Get("bar/baz")
         class Barbaz() : Request({
             TextResult("bar/baz")
         })
 
-        Get("#")
+        @Get("#")
         class Foobar() : Request({
             TextResult("foobar")
         })
 
-        Get("*/list")
+        @Get("*/list")
         class List() : Request({
             TextResult("list: ${params[0]}")
         })
 
-        Get("complex/*/list/:id")
-        class Complex(id: String) : Request({
+        @Get("complex/*/list/:id")
+        class Complex(val id: String) : Request({
             TextResult("complex: ${params[0]} id = $id")
         })
 
-        Get("redirect")
+        @Get("redirect")
         class Redirect() : Request({
             redirect("/foo/bar")
         })
 
-        Get("compute/:anInt/:aFloat")
+        @Get("compute/:anInt/:aFloat")
         class Compute(val anInt: Int, val aFloat: Float) : Request({
-            TextResult("compute: ${anInt}, ${aFloat}")
+            TextResult("compute: $anInt, $aFloat")
         })
 
-        Get("compute")
+        @Get("compute")
         class ComputeQuery(val anInt: Int, val aFloat: Float) : Request({
-            TextResult("compute: ${anInt}, ${aFloat}")
+            TextResult("compute: $anInt, $aFloat")
         })
     }
 
     object Crud {
-        Get("")
+        @Get("")
         class Index() : Request({
             TextResult("index")
         })
 
-        Get(":id")
-        class Show(id: Int) : Request({
+        @Get(":id")
+        class Show(val id: Int) : Request({
             TextResult("show $id")
         })
 
-        Post("")
+        @Post("")
         class Create() : Request({
             TextResult("create")
         })
 
-        Put(":id")
-        class Update(id: Int) : Request({
-            TextResult("update ${id}")
+        @Put(":id")
+        class Update(val id: Int) : Request({
+            TextResult("update $id")
         })
 
-        Delete(":id")
-        class _Delete(id: String) : Request({
+        @Delete(":id")
+        class _Delete(val id: String) : Request({
             TextResult("delete $id")
         })
     }

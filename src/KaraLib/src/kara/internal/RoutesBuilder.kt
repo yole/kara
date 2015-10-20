@@ -1,14 +1,13 @@
 package kara.internal
 
-import kotlinx.reflection.*
-import java.util.ArrayList
 import kara.*
-import java.lang.instrument.Instrumentation
-import kotlin.reflect.jvm.kotlin
+import kotlinx.reflection.filterIsAssignable
+import kotlinx.reflection.findClasses
+import java.util.*
 
-val karaAnnotations = listOf(javaClass<Put>(), javaClass<Get>(), javaClass<Post>(), javaClass<Delete>(), javaClass<Route>(), javaClass<Location>())
+val karaAnnotations = listOf(Put::class.java, Get::class.java, Post::class.java, Delete::class.java, Route::class.java, Location::class.java)
 
-@suppress("UNCHECKED_CAST")
+@Suppress("UNCHECKED_CAST")
 fun scanPackageForResources(prefix: String, classloader: ClassLoader, cache: MutableMap<Pair<Int, String>, List<Class<*>>>) : List<Class<out Resource>> {
     try {
         return classloader.findClasses(prefix, cache)
@@ -28,14 +27,15 @@ fun scanPackageForResources(prefix: String, classloader: ClassLoader, cache: Mut
 fun scanObjects(objects : Array<Any>, classloader: ClassLoader? = null) : List<Class<out Resource>> {
     val answer = ArrayList<Class<out Resource>>()
 
+    @Suppress("UNCHECKED_CAST")
     fun scan(routesObject : Any) {
-        val newClass = classloader?.loadClass(routesObject.javaClass.getName()) ?: routesObject.javaClass
-        for (innerClass in newClass.getDeclaredClasses()) {
-            innerClass.objectInstance()?.let {
+        val newClass = classloader?.loadClass(routesObject.javaClass.name) ?: routesObject.javaClass
+        for (innerClass  in newClass.declaredClasses) {
+            (innerClass as Class<Any>).kotlin.objectInstance?.let {
                 scan(it)
             } ?: run {
-                if (javaClass<Resource>().isAssignableFrom(innerClass)) {
-                    answer.add(innerClass as Class<Resource>)
+                if (Resource::class.java.isAssignableFrom(innerClass)) {
+                    answer.add(innerClass as Class<out Resource>)
                 }
             }
         }

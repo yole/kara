@@ -19,8 +19,8 @@ interface ActionResult {
  */
 open class TextResult(val text: String) : ActionResult {
     override fun writeResponse(context: ActionContext) {
-        context.response.setContentType("text/plain")
-        val out = context.response.getWriter()
+        context.response.contentType = "text/plain"
+        val out = context.response.writer
         out?.print(text)
         out?.flush()
     }
@@ -58,21 +58,21 @@ open class XmlResult(val xml: String) : ActionResult {
         val transformer = transformerFactory.newTransformer()!!;
         transformer.setOutputProperty(OutputKeys.INDENT, "yes");
         transformer.transform(xmlInput, xmlOutput);
-        return xmlOutput.getWriter().toString();
+        return xmlOutput.writer.toString();
     }
 
     override fun writeResponse(context: ActionContext) {
-        context.response.setStatus(200)
+        context.response.status = 200
         respondWithXml(context)
     }
 
     fun respondWithXml(context: ActionContext) {
         val text = prettyFormat(xml, 2)
         val content = text.toByteArray();
-        context.response.setContentLength(content.size())
-        context.response.setContentType("text/xml")
-        context.response.setCharacterEncoding("UTF-8")
-        val out = context.response.getOutputStream()
+        context.response.setContentLength(content.size)
+        context.response.contentType = "text/xml"
+        context.response.characterEncoding = "UTF-8"
+        val out = context.response.outputStream
         out?.write(content)
         out?.flush()
     }

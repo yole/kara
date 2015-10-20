@@ -1,18 +1,15 @@
 package kara
 
-import java.net.URL
-import javax.servlet.http.HttpServletResponse
-import javax.servlet.http.HttpServletRequest
-import java.lang.reflect.Modifier
 import kara.internal.*
-import kotlinx.reflection.*
-import java.util.HashSet
-import java.util.LinkedHashSet
-import kotlin.html.*
-import java.util.LinkedHashMap
-import java.net.URLEncoder
+import kotlinx.reflection.Serialization
+import kotlinx.reflection.primaryParametersNames
+import kotlinx.reflection.propertyValue
+import kotlinx.reflection.urlEncode
+import java.util.*
+import javax.servlet.http.HttpServletRequest
+import kotlin.html.DirectLink
+import kotlin.html.Link
 import kotlin.reflect.KClass
-import kotlin.reflect.jvm.java
 
 public abstract class Resource() : Link {
     abstract  fun handle(context: ActionContext): ActionResult
@@ -21,13 +18,13 @@ public abstract class Resource() : Link {
 
     fun href(context: String): String {
         val url = requestParts(context)
-        if (url.second.size() == 0) return url.first
+        if (url.second.size == 0) return url.first
 
         val answer = StringBuilder()
 
         answer.append(url.first)
         answer.append("?")
-        answer.append(url.second map { "${it.key}=${Serialization.serialize(it.value)?.let{urlEncode(it)}}" } join("&"))
+        answer.append((url.second map { "${it.key}=${Serialization.serialize(it.value)?.let{urlEncode(it)}}" }).joinToString(("&")))
 
         return answer.toString()
     }
@@ -38,7 +35,11 @@ public abstract class Resource() : Link {
 
         val path = StringBuilder(context)
 
-        val properties = LinkedHashSet(primaryProperties())
+        if (!context.endsWith('/')) {
+            path.append('/')
+        }
+
+        val properties = primaryParametersNames().toMutableSet()
         val components = route.toRouteComponents().map({
             when (it) {
                 is StringRouteComponent -> it.componentText
@@ -51,19 +52,18 @@ public abstract class Resource() : Link {
                     Serialization.serialize(propertyValue(it.name))
                 }
                 is WildcardRouteComponent -> throw RuntimeException("Routes with wildcards aren't supported")
-                else -> throw RuntimeException("Unknown route component $it of class ${it.javaClass.getName()}")
+                else -> throw RuntimeException("Unknown route component $it of class ${it.javaClass.name}")
             }
         })
 
-        path.append(components.filterNotNull().join("/"))
-        if (path.length() == 0) path.append("/")
+        path.append(components.filterNotNull().joinToString("/"))
 
         val queryArgs = LinkedHashMap<String, Any>()
-        for (prop in properties filter { propertyValue(it) != null }) {
+        for (prop in properties filter { propertyValue<Resource,Any>(it) != null }) {
             queryArgs[prop] = propertyValue(prop)!!
         }
 
-        if (!descriptor.allowCrossOrigin) {
+        if (descriptor.allowCrossOrigin == "") {
             queryArgs[ActionContext.SESSION_TOKEN_PARAMETER] = ActionContext.current().sessionToken()
         }
 
@@ -84,7 +84,7 @@ public fun Class<out Resource>.baseLink(): Link {
         throw RuntimeException("You can't have base link for the route with URL parameters")
     }
 
-    return (if (!descriptor.allowCrossOrigin) {
+    return (if (descriptor.allowCrossOrigin == "") {
         "$route?_st=${ActionContext.current().sessionToken()}"
     }
     else route).link()
@@ -96,9 +96,8 @@ public fun String.link(): Link {
 }
 
 public fun contextPath(): String {
-    val request = ActionContext.tryGet()?.request
-    if (request == null) return ""
-    return request.getAttribute("CONTEXT_PATH") as? String ?: request.getContextPath() ?: ""
+    val request = ActionContext.tryGet()?.request ?: return ""
+    return request.getAttribute("CONTEXT_PATH") as? String ?: request.contextPath ?: ""
 }
 
 public fun HttpServletRequest.setContextPath(path: String) {

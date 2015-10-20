@@ -1,21 +1,20 @@
 package kara
 
-import java.util.ArrayList
-import java.net.URLClassLoader
-import kara.internal.*
+import kara.internal.scanPackageForResources
 import kotlinx.reflection.urlDecode
-
-import java.io.File
 import org.apache.log4j.Logger
-import java.util.HashSet
+import java.io.File
+import java.net.URLClassLoader
 import java.nio.file.*
-import java.nio.file.StandardWatchEventKinds.*
-import java.net.URLDecoder
+import java.nio.file.StandardWatchEventKinds.ENTRY_CREATE
+import java.nio.file.StandardWatchEventKinds.ENTRY_DELETE
+import java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY
 import java.nio.file.attribute.BasicFileAttributes
+import java.util.*
 
 /** The base Kara application class.
  */
-open class Application(public val config: ApplicationConfig) {
+open class Application(public val config: ApplicationConfig, public val appContext: String = "") {
     private var _context: ApplicationContext? = null
     private val watchKeys = ArrayList<WatchKey>()
     private val contextLock = Object()
@@ -24,19 +23,19 @@ open class Application(public val config: ApplicationConfig) {
         get() = synchronized(contextLock) {
             if (config.isDevelopment()) {
                 val changes = watchKeys.flatMap { it.pollEvents()!! }
-                if (changes.size() > 0) {
+                if (changes.size > 0) {
                     logger.info("Changes in application detected.")
-                    var count = changes.size()
+                    var count = changes.size
                     while (true) {
                         Thread.sleep(200)
                         val moreChanges = watchKeys.flatMap { it.pollEvents()!! }
-                        if (moreChanges.size() == 0)
+                        if (moreChanges.size == 0)
                             break
                         logger.info("Waiting for more changes.")
-                        count += moreChanges.size()
+                        count += moreChanges.size
                     }
 
-                    logger.info("Changes to ${count} files caused ApplicationContext restart.")
+                    logger.info("Changes to $count files caused ApplicationContext restart.")
                     changes.take(5).forEach { logger.info("...  ${it.context()}") }
                     destroyContext()
                     _context = null
@@ -51,7 +50,7 @@ open class Application(public val config: ApplicationConfig) {
             context!!
         }
 
-    public fun requestClassloader(): ClassLoader = classLoader(config)
+    public fun requestClassloader(): ClassLoader = classLoader(config, appContext)
 
     open fun createContext(): ApplicationContext {
         val classLoader = requestClassloader()
@@ -86,19 +85,19 @@ open class Application(public val config: ApplicationConfig) {
                 return FileVisitResult.CONTINUE
             }
             override fun visitFile(file: Path?, attrs: BasicFileAttributes): FileVisitResult {
-                val dir = file?.getParent()
+                val dir = file?.parent
                 if (dir != null)
                     paths.add(dir)
                 return FileVisitResult.CONTINUE
             }
         }
-        val loaders = resourceTypes.map { it.getClassLoader() }.toSet()
+        val loaders = resourceTypes.map { it.classLoader }.toSet()
         for (loader in loaders) {
             if (loader is URLClassLoader) {
-                val loaderUrls = loader.getURLs()
+                val loaderUrls = loader.urLs
                 for (url in loaderUrls) {
-                    logger.debug("Evaluating URL '${url}' to watch for changes.")
-                    url.getPath()?.let {
+                    logger.debug("Evaluating URL '$url' to watch for changes.")
+                    url.path?.let {
                         val folder = File(urlDecode(it))
                         if (folder.exists()) {
                             Files.walkFileTree(folder.toPath(), visitor)
@@ -110,7 +109,7 @@ open class Application(public val config: ApplicationConfig) {
 
         val watcher = FileSystems.getDefault()!!.newWatchService();
         paths.forEach {
-            logger.debug("Watching ${it} for changes.")
+            logger.debug("Watching $it for changes.")
         }
         watchKeys.addAll(paths.map { it.register(watcher, ENTRY_CREATE, ENTRY_DELETE, ENTRY_MODIFY)!! })
     }
@@ -124,19 +123,19 @@ open class Application(public val config: ApplicationConfig) {
     }
 
     companion object {
-        val logger = Logger.getLogger(javaClass)!!
+        val logger = Logger.getLogger(Application::class.java)
 
-        fun classLoader(config: ApplicationConfig): ClassLoader {
-            val rootClassloader = javaClass.getClassLoader()!!
-            val classPath = config.classPath
+        fun classLoader(config: ApplicationConfig, appContext: String): ClassLoader {
+            val rootClassloader = Application::class.java.classLoader!!
+            val classPath = config.classPath(appContext)
             return when {
                 classPath.isEmpty() -> rootClassloader
                 else -> URLClassLoader(classPath, rootClassloader)
             }
         }
 
-        public fun load(config: ApplicationConfig): Application {
-            val application = Application(config)
+        public fun load(config: ApplicationConfig, appContext: String): Application {
+            val application = Application(config, appContext)
             application.start()
             return application
         }

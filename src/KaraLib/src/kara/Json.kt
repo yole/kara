@@ -1,6 +1,5 @@
 package kara
 
-import javax.servlet.http.HttpServletResponse
 import java.util.*
 
 /** JSON Action Result.
@@ -14,7 +13,7 @@ class JsonResult(val json: JsonElement) : ActionResult {
         json.build(result)
         if (jsonpCallback != null) result.append(")")
 
-        val out = context.response.getWriter()
+        val out = context.response.writer
         out.print(result.toString())
         out.flush()
     }
@@ -32,7 +31,7 @@ class JsonValue(val value: Any) : JsonElement {
             is Int -> builder.append(value)
             is Long -> builder.append(value)
             is Boolean -> builder.append(value)
-            else -> builder.append("\"${value}\"")
+            else -> builder.append("\"$value\"")
         }
     }
 }
@@ -40,7 +39,9 @@ class JsonValue(val value: Any) : JsonElement {
 class JsonRoot : JsonElement {
     private var _element : JsonElement? = null
     fun set(element : JsonElement) { _element = element }
-    override fun build(builder: StringBuilder) = _element?.build(builder)
+    override fun build(builder: StringBuilder) {
+        _element?.build(builder)
+    }
 }
 
 class JsonArray : JsonElement {
@@ -71,7 +72,7 @@ class JsonObject : JsonElement {
         for((key, value) in properties) {
             if (!first)
                 builder.append(",")
-            builder.append("\"${key}\"")
+            builder.append("\"$key\"")
             builder.append(":")
             value.build(builder)
             first = false

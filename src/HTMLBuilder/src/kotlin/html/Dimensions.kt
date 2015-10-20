@@ -1,7 +1,6 @@
 package kotlin.html
 
 import java.text.DecimalFormat
-import kotlin.html.LinearUnits.*
 
 
 enum class LinearUnits(val value: String) {
@@ -21,12 +20,12 @@ class LinearDimension(var value: Double, var units: LinearUnits) {
         /** Creates a linear dimension froma string literal */
         fun fromString(s: String): LinearDimension {
             if (s.endsWith("em"))
-                return LinearDimension(s.substring(0, s.length() - 2).toDouble(), LinearUnits._em)
+                return LinearDimension(s.substring(0, s.length - 2).toDouble(), LinearUnits._em)
             if (s.endsWith("px"))
-                return LinearDimension(s.substring(0, s.length() - 2).toDouble(), LinearUnits._px)
+                return LinearDimension(s.substring(0, s.length - 2).toDouble(), LinearUnits._px)
             if (s.endsWith("%"))
-                return LinearDimension(s.substring(0, s.length() - 1).toDouble(), LinearUnits._percent)
-            throw Exception("Invalid linear dimension: ${s}")
+                return LinearDimension(s.substring(0, s.length - 1).toDouble(), LinearUnits._percent)
+            throw Exception("Invalid linear dimension: $s")
         }
 
         val x = 0.em
@@ -48,40 +47,22 @@ fun isLinearDimension(s: String): Boolean {
 }
 
 /** Extenion property to convejkrt a double to a LinearDimension with units em. */
-val Double.em: LinearDimension
-    get() {
-        return LinearDimension(this, LinearUnits._em)
-    }
+val Double.em: LinearDimension get() = LinearDimension(this, LinearUnits._em)
 
 /** Extenion property to convert an int to a LinearDimension with units em. */
-val Int.em: LinearDimension
-    get() {
-        return LinearDimension(this.toDouble(), LinearUnits._em)
-    }
+val Int.em: LinearDimension get() = LinearDimension(this.toDouble(), LinearUnits._em)
 
 /** Extenion property to convert a double to a LinearDimension with units px. */
-val Double.px: LinearDimension
-    get() {
-        return LinearDimension(this, LinearUnits._px)
-    }
+val Double.px: LinearDimension get() = LinearDimension(this, LinearUnits._px)
 
 /** Extenion property to convert an int to a LinearDimension with units px. */
-public val Int.px: LinearDimension
-    get() {
-        return LinearDimension(this.toDouble(), LinearUnits._px)
-    }
+public val Int.px: LinearDimension get() = LinearDimension(this.toDouble(), LinearUnits._px)
 
 /** Extenion property to convert a double to a LinearDimension with units percent. */
-val Double.percent: LinearDimension
-    get() {
-        return LinearDimension(this, LinearUnits._percent)
-    }
+val Double.percent: LinearDimension get() = LinearDimension(this, LinearUnits._percent)
 
 /** Extenion property to convert an int to a LinearDimension with units percent. */
-val Int.percent: LinearDimension
-    get() {
-        return LinearDimension(this.toDouble(), LinearUnits._percent)
-    }
+val Int.percent: LinearDimension get() = LinearDimension(this.toDouble(), LinearUnits._percent)
 
 /** Stores 4 linear dimensions that describe a box, like padding and margin.
  */

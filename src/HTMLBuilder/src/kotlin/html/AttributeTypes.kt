@@ -1,10 +1,12 @@
 package kotlin.html
 
+import kotlin.reflect.KProperty
+
 public abstract class Attribute<T>(val name: String) {
-    fun get(tag: HtmlTag, property: PropertyMetadata): T {
+    operator fun getValue(tag: HtmlTag, property: KProperty<*>): T {
         return decode(tag[name]);
     }
-    open fun set(tag: HtmlTag, property: PropertyMetadata, value: T) {
+    operator open fun setValue(tag: HtmlTag, property: KProperty<*>, value: T) {
         tag[name] = encode(value);
     }
 
@@ -60,9 +62,9 @@ public class TickerAttribute(name: String) : Attribute<Boolean>(name) {
         return if (s == null) false else true
     }
 
-    override fun set(tag: HtmlTag, property: PropertyMetadata, value: Boolean) {
+    operator override fun setValue(tag: HtmlTag, property: KProperty<*>, value: Boolean) {
         if (value == true) {
-            super.set(tag, property, value)
+            super.setValue(tag, property, value)
         } else {
             tag.removeAttribute(name)
         }
@@ -79,21 +81,23 @@ public class LinkAttribute(name: String) : Attribute<Link>(name) {
     }
 }
 
-public interface StringEnum<T : Enum<T>> : Enum<T> {
-    val value: String get() = name()
+public interface StringEnum<T : Enum<T>> {
+    val value: String
 }
 
-public class EnumAttribute<T : StringEnum<T>>(name: String, val klass: Class<T>) : Attribute<T>(name) {
+public class EnumAttribute<T>(name: String, val klass: Class<T>) : Attribute<T>(name)
+    where T : StringEnum<T>, T : Enum<T>
+{
     override fun encode(t: T): String? {
         return t.value
     }
 
     override fun decode(s: String?): T {
-        for (c in klass.getEnumConstants()!!) {
+        for (c in klass.enumConstants!!) {
             if (encode(c) == s) return c
         }
 
-        throw RuntimeException("Can't decode '$s' as value of '${klass.getName()}'")
+        throw RuntimeException("Can't decode '$s' as value of '${klass.name}'")
     }
 }
 

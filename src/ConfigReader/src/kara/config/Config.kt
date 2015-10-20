@@ -1,11 +1,13 @@
 package kara.config
 
+import org.apache.log4j.Logger
+import java.io.File
 import java.util.*
-import javax.naming.*
-import java.util.concurrent.*
-import org.apache.log4j.*
-import java.io.*
-import java.util.regex.*
+import java.util.concurrent.ConcurrentHashMap
+import java.util.regex.Pattern
+import javax.naming.Context
+import javax.naming.InitialContext
+import javax.naming.NamingException
 
 public open class Config() {
     public class MissingException(desc: String) : RuntimeException(desc)
@@ -17,7 +19,7 @@ public open class Config() {
      * Gets the value for the given key.
      * Will raise an exception if the value isn't present. Try calling contains(key) first if you're unsure.
      */
-    public fun get(name: String): String {
+    operator public fun get(name: String): String {
         return tryGet(name) ?: throw MissingException("Could not find config value for key $name")
     }
 
@@ -38,7 +40,7 @@ public open class Config() {
     }
 
     /** Sets a value for the given key. */
-    public fun set(name: String, value: String) {
+    operator public fun set(name: String, value: String) {
         data[name] = value
     }
 
@@ -50,7 +52,7 @@ public open class Config() {
     /** Prints the entire config to a nicely formatted string. */
     public override fun toString(): String {
         val builder = StringBuilder()
-        for (name in data.keySet()) {
+        for (name in data.keys) {
             builder.append("$name: ${data[name]}\n")
         }
         return builder.toString()
@@ -69,7 +71,7 @@ public open class Config() {
     }
 
     public companion object {
-        val logger = Logger.getLogger(javaClass<Config>())!!
+        val logger = Logger.getLogger(Config::class.java)!!
 
         public fun readConfig(config: Config, path: String, classloader: ClassLoader, baseFile: File? = null) {
             fun eval(name: String): String {
@@ -82,9 +84,9 @@ public open class Config() {
             var text: String? = null
             var base: File? = null
             if (file.exists()) {
-                base = file.getParentFile()
+                base = file.parentFile
                 text = file.readText("UTF-8")
-                Config.logger.info("Reading ${file.getAbsolutePath()}")
+                Config.logger.info("Reading ${file.absolutePath}")
             } else {
                 val resource = classloader.getResourceAsStream(path)
                 if (resource != null) {
@@ -98,7 +100,7 @@ public open class Config() {
                 error("$path cannot be found")
             }
 
-            text.reader.forEachLine {
+            text.reader().forEachLine {
                 val line = it.trim()
 
                 when {
@@ -116,7 +118,7 @@ public open class Config() {
 
                     else -> {
                         val eq = line.indexOf('=')
-                        if (eq <= 0) error("Cannot parse line '$line' in file '${file.getAbsolutePath()}'")
+                        if (eq <= 0) error("Cannot parse line '$line' in file '${file.absolutePath}'")
                         config.set(line.substring(0, eq).trim(), evalVars(line.substring(eq + 1).trim(), ::eval))
                     }
                 }
@@ -137,7 +139,7 @@ public open class Config() {
                 lastAppend = matcher.end()
             }
 
-            answer.append(line, lastAppend, line.length())
+            answer.append(line, lastAppend, line.length)
 
             return answer.toString()
         }

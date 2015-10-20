@@ -17,7 +17,7 @@ fun config(appConfig: ApplicationConfig) {
 }
 
 fun main(args: Array<String>) {
-    val appConfig = ApplicationConfig.loadFrom(if (args.size() > 0) args[0] else "development.conf")
+    val appConfig = ApplicationConfig.loadFrom(if (args.size > 0) args[0] else "development.conf")
 
     val logPath = appConfig.tryGet("kara.logPropertiesPath")
 
@@ -26,7 +26,7 @@ fun main(args: Array<String>) {
     }
     else {
         BasicConfigurator.configure()
-        LogManager.getRootLogger()?.setLevel(Level.INFO)
+        LogManager.getRootLogger()?.level = Level.INFO
     }
 
     config(appConfig)

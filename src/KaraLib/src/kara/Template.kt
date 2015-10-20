@@ -8,7 +8,7 @@ public abstract class Template<TOuter>() {
 
 open public class TemplatePlaceholder<TOuter, TTemplate>() {
     private var content: (TTemplate.() -> Unit)? = null
-    fun invoke(content: TTemplate.() -> Unit) {
+    operator fun invoke(content: TTemplate.() -> Unit) {
         this.content = content
     }
     fun TTemplate.render() {
@@ -23,7 +23,7 @@ open public class Placeholder<TOuter>() {
     private var content: (TOuter.(Placeholder<TOuter>) -> Unit)? = null
     var meta : String = ""
 
-    fun invoke(meta : String = "", content: TOuter.(Placeholder<TOuter>) -> Unit) {
+    operator fun invoke(meta : String = "", content: TOuter.(Placeholder<TOuter>) -> Unit) {
         this.content = content
         this.meta = meta
     }
@@ -37,18 +37,18 @@ open public class Placeholder<TOuter>() {
 
 public class PlaceholderItem<TOuter>(val index: Int, val collection: List<PlaceholderItem<TOuter>>) : Placeholder<TOuter>() {
     val first: Boolean get() = index == 0
-    val last: Boolean get() = index == collection.size()
+    val last: Boolean get() = index == collection.size
 }
 
 open public class Placeholders<TOuter, TInner>() {
     private var items = ArrayList<PlaceholderItem<TInner>>()
-    fun invoke(meta : String = "", content: TInner.(Placeholder<TInner>) -> Unit = {}) {
-        val placeholder = PlaceholderItem<TInner>(items.size(), items)
+    operator fun invoke(meta : String = "", content: TInner.(Placeholder<TInner>) -> Unit = {}) {
+        val placeholder = PlaceholderItem<TInner>(items.size, items)
         placeholder(meta, content)
         items.add(placeholder)
     }
 
-    fun isEmpty() : Boolean = items.size() == 0
+    fun isEmpty() : Boolean = items.size == 0
     fun TOuter.render(render: TOuter.(PlaceholderItem<TInner>) -> Unit) {
         for (item in items) {
             render(item)
