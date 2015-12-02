@@ -41,6 +41,11 @@ object Routes {
         TextResult("ndefault/$p")
     })
 
+    @Get("/emptyStrings")
+    class EmptyStrings(val es: String, val esn: String?, val int: Int?) : Request({
+        TextResult("es:$es,esn:$esn,int:$int")
+    })
+
     @Get("/error/:brokenPipe")
     class Error(val brokenPipe: Boolean) : Request({
         if (brokenPipe) {
@@ -70,6 +75,10 @@ object Routes {
             2 -> SomeFunView()
             else -> ErrorResult(404, "Not found")
         }
+    })
+
+    @Get("/route-params/:param") class RouteParams(val param: String) : Request({
+        TextResult(param)
     })
 
     object Foo {

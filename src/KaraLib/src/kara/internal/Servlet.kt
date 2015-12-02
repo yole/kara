@@ -12,7 +12,9 @@ public open class Servlet() : HttpServlet() {
 
     val application: Application by lazy {
         val servletContext = servletContext!!
-        val config: ApplicationConfig = ApplicationConfig.loadFrom(servletContext.getInitParameter("kara.config") ?: error("kara.config context parameter is required."))
+        val config: ApplicationConfig = ApplicationConfig.loadFrom(
+                servletContext.getInitParameter("kara.config") ?: error("kara.config context parameter is required."),
+                servletContext.classLoader)
 
         for (name in servletContext.initParameterNames) {
             config[name] = servletContext.getInitParameter(name)!!
@@ -51,7 +53,7 @@ public open class Servlet() : HttpServlet() {
         catch (ex: Throwable) {
             logger.error("Error processing request: ${req.requestURI}, User agent: ${req.getHeader("User-Agent")}", ex)
             if (!resp.isCommitted) {
-                resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, ex.getMessage())
+                resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, ex.message)
             }
         }
     }
