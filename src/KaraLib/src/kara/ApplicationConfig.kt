@@ -1,7 +1,6 @@
 package kara
 
 import kara.config.Config
-import kara.internal.logger
 import java.io.File
 import java.net.URL
 import java.util.*
@@ -9,12 +8,12 @@ import java.util.*
 /**
  * Store application configuration.
  */
-public open class ApplicationConfig() : Config() {
+public open class ApplicationConfig(val appClassloader: ClassLoader) : Config() {
 
     public companion object {
-        public fun loadFrom(configPath: String): ApplicationConfig {
-            val config = ApplicationConfig()
-            Config.readConfig(config, configPath, ApplicationConfig::class.java.classLoader!!)
+        public fun loadFrom(configPath: String, classLoader: ClassLoader? = null): ApplicationConfig {
+            val config = ApplicationConfig(classLoader ?: ApplicationConfig::class.java.classLoader!!)
+            Config.readConfig(config, configPath, config.appClassloader)
             return config
         }
     }
@@ -79,7 +78,7 @@ public open class ApplicationConfig() : Config() {
                             }
 
                             it.endsWith("/*") -> {
-                                File(it.removeSuffix("/*")).listFiles { it.isFile && it.name.endsWith(".jar") }?.toList() ?: listOf()
+                                File(it.removeSuffix("/*")).listFiles{ file -> file.isFile && file.name.endsWith(".jar") }?.toList() ?: listOf()
                             }
 
                             else -> {

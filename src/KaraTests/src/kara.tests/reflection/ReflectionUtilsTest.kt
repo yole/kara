@@ -23,11 +23,13 @@ object Foo2 {
 
 class ObjectInstances() {
 
+    @Suppress("DEPRECATION")
     @Test fun testDeprecatedObjectInstanceViaReflection() {
         assertNotNull(Foo2::class.java.objectInstance0())
         assertNotNull(Foo2.Test::class.java.objectInstance0())
     }
 
+    @Suppress("DEPRECATION")
     @Test fun testObjectInstance() {
         assertNotNull(Foo2::class.objectInstance)
         assertNotNull(Foo2.Test::class.objectInstance)
@@ -52,6 +54,6 @@ class ClassLoaderFunctionsTest() {
         val app = Application.load(ApplicationConfig.loadFrom("src/KaraTests/src/kara.tests/test.conf"),"")
         val classLoader = app.requestClassloader()
         assertTrue((classLoader as URLClassLoader).urLs.any{ it.file.endsWith("kootstrap.jar")}, "Can't find test jar file in classpath")
-        assertTrue(scanPackageForResources("kotlin.html.bootstrap", classLoader, hashMapOf()).isNotEmpty())
+        assertTrue(scanPackageForResources("kotlinx.html.bootstrap", classLoader, hashMapOf()).isNotEmpty())
     }
 }

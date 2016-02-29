@@ -1,5 +1,7 @@
 package kara
 
+import java.io.StringWriter
+import java.io.Writer
 import java.util.*
 
 /** JSON Action Result.
@@ -19,7 +21,37 @@ class JsonResult(val json: JsonElement) : ActionResult {
     }
 }
 
-fun jsonString(value: String): JsonValue = JsonValue(value.replace("\\", "\\\\").replace("\"", "\\\"").replace("\r\n", "\n").replace("\n", "\\n").replace("\t", "    "))
+/**
+ * **Implementation notes:**
+ * - based to Douglas Crockford's implementation from GitHub
+ * (https://github.com/douglascrockford/JSON-java/blob/master/JSONObject.java)
+ * excepting quotation of slashes that follow opening angle bracket '<'. For the sake of simplicity.
+ */
+fun quote(s: String, w: Writer = StringWriter(s.length)): Writer {
+    for (ch in s) {
+        when (ch) {
+            '\\', '"' -> w.append('\\').append(ch)
+            '\b' -> w.write("\\b")
+            '\t' -> w.write("\\t")
+            '\n' -> w.write("\\n")
+            '\r' -> w.write("\\r")
+            '\u000c' -> w.write("\\f") // Form Feed symbol doesn't have predefined literal in Kotlin
+            else ->
+                if (ch < ' ' || (ch >= '\u0080' && ch < '\u00a0') || (ch >= '\u2000' && ch < '\u2100')) {
+                    val hex = Integer.toHexString(ch.toInt())
+
+                    w.write("\\u")
+                    w.write("0000", 0, 4 - hex.length)
+                    w.write(hex)
+                } else
+                    w.append(ch)
+        }
+    }
+
+    return w
+}
+
+fun jsonString(value: String): JsonValue = JsonValue(quote(value).toString())
 
 interface JsonElement {
     fun build(builder: StringBuilder)
@@ -134,20 +166,19 @@ inline fun JsonRoot.jsonObject(body: JsonObject.() -> Unit){
     set(obj)
 }
 
-inline fun jsonArray(body: JsonArray.() -> Unit) : JsonElement {
-    val array = JsonArray()
-    array.body()
-    return array
+inline fun jsonResult(body: JsonRoot.() -> Unit): JsonResult {
+    return JsonResult(jsonNode(body))
 }
 
-inline fun jsonObject(body: JsonObject.() -> Unit) : JsonElement {
-    val obj = JsonObject()
-    obj.body()
-    return obj
+inline fun jsonString(body: JsonRoot.() -> Unit): String {
+    return StringBuilder().apply { jsonNode(body).build(this) }.toString()
 }
 
-inline fun json(body: JsonRoot.() -> Unit) : JsonResult {
-    val json = JsonRoot()
-    json.body()
-    return JsonResult(json)
+inline fun jsonNode(body: JsonRoot.() -> Unit): JsonElement {
+    return JsonRoot().apply {
+        body()
+    }
 }
+
+@Deprecated(replaceWith = ReplaceWith("jsonResult(body)"), message = "use jsonResult instead", level = DeprecationLevel.WARNING)
+inline fun json(body: JsonRoot.() -> Unit) = jsonResult(body)

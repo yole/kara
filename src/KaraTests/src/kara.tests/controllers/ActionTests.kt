@@ -9,7 +9,7 @@ import org.apache.log4j.spi.LoggingEvent
 import org.junit.Before
 import org.junit.Test
 import javax.servlet.http.HttpServletResponse
-import kotlin.html.htmlEscapeTo
+import kotlinx.html.htmlEscapeTo
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -64,6 +64,11 @@ class ActionTests() {
         assertEquals("/default/test", Routes.Default().href())
         assertEquals("/default/smth", Routes.Default("smth").href())
         assertEquals("/default", Routes.Default(null).href())
+    }
+
+    @Test fun paramEscaping() {
+        assertResponse("1", Routes.RouteParams("1").href())
+        assertResponse("abc/def", Routes.RouteParams("abc/def").href())
     }
 
     @Test fun emptyStrings() {
