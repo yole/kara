@@ -15,6 +15,7 @@
             <classpath>
                 <fileset dir="lib" includes="*.jar"/>
                 <fileset dir="${kotlin.compiler}/lib" includes="kotlin-reflect.jar"/>
+                <fileset dir="${kotlin.compiler}/lib" includes="kotlin-test.jar" />
             </classpath>
         </kotlinc>
     </target>
